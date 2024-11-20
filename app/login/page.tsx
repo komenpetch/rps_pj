@@ -111,6 +111,7 @@ export default function LoginPage() {
                             >
                                 Sign up
                             </button>
+                            
                         </>
                     )}
                 </p>
