@@ -5,11 +5,42 @@ import { useState } from 'react';
 export default function LoginPage() {
     const [isSignUpMode, setIsSignUpMode] = useState(false);
     const [formData, setFormData] = useState({ username: '', email: '', password: '' });
+    const [error, setError] = useState('');
+    const [success, setSuccess] = useState('');
     const [showPassword, setShowPassword] = useState(false);
 
     const toggleMode = () => {
         setIsSignUpMode(!isSignUpMode);
         setFormData({ username: '', email: '', password: '' });
+        setError('');
+        setSuccess('');
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        try {
+            const endpoint = isSignUpMode ? '/api/auth/register' : '/api/auth/login';
+            const response = await fetch(endpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(formData),
+            });
+
+            if (!response.ok) {
+                const { error } = await response.json();
+                setError(error);
+                return;
+            }
+
+            if (isSignUpMode) {
+                setSuccess('Account created successfully! You can now sign in.');
+                toggleMode();
+            } else {
+                window.location.href = '/dashboard';
+            }
+        } catch (err) {
+            setError('An unexpected error occurred. Please try again.');
+        }
     };
 
     const togglePasswordVisibility = () => {
@@ -23,7 +54,10 @@ export default function LoginPage() {
                     {isSignUpMode ? 'Sign up' : 'Sign in'}
                 </h2>
 
-                <form className="space-y-6">
+                {error && <p className="text-red-500 text-sm text-center mb-4">{error}</p>}
+                {success && <p className="text-green-500 text-sm text-center mb-4">{success}</p>}
+
+                <form onSubmit={handleSubmit} className="space-y-6">
                     {/* Username */}
                     <div className="relative">
                         <i className="fas fa-user absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400"></i>

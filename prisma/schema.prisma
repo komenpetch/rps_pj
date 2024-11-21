@@ -8,18 +8,18 @@ generator client {
 }
 
 model User {
-    id       Int      @id @default(autoincrement())
-    name     String   @unique
-    email    String   @unique
+    id       String  @id @default(cuid())
+    username String  @unique
+    email    String  @unique
     password String
-    role     String   @default("player") // "admin" or "player"
+    role     String  @default("user")
     scores   Score[]
 }
 
 model Score {
-    id       Int      @id @default(autoincrement())
-    userId   Int
-    value    Int
-    user     User     @relation(fields: [userId], references: [id])
+    id       String @id @default(cuid())
+    userId   String
+    user     User   @relation(fields: [userId], references: [id])
+    points   Int
     createdAt DateTime @default(now())
 }
