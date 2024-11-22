@@ -46,7 +46,7 @@ export default function LoginPage() {
     const togglePasswordVisibility = () => {
         setShowPassword(!showPassword);
     };
-
+    
     return (
         <div className="min-h-screen flex items-center justify-center bg-[#333333]">
             <div className="bg-[#222222] text-gray-200 rounded-lg p-8 w-full max-w-sm shadow-2xl shadow-black">
