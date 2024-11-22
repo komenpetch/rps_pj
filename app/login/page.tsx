@@ -25,18 +25,20 @@ export default function LoginPage() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(formData),
             });
-
+    
+            const result = await response.json();
+    
             if (!response.ok) {
-                const { error } = await response.json();
-                setError(error);
+                setError(result.error || 'Something went wrong');
                 return;
             }
-
+    
             if (isSignUpMode) {
                 setSuccess('Account created successfully! You can now sign in.');
                 toggleMode();
             } else {
-                window.location.href = '/dashboard';
+                localStorage.setItem('session', JSON.stringify(result.session || { user: formData.username }));
+                window.location.href = '/';
             }
         } catch (err) {
             setError('An unexpected error occurred. Please try again.');
