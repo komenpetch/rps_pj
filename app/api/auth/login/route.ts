@@ -17,7 +17,12 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: 'Invalid username or password' }, { status: 401 });
     }
 
-    // Simulate session handling
-    const session = { id: user.id, username: user.username };
-    return NextResponse.json({ success: true, session });
+    const response = NextResponse.json({ success: true, user });
+    response.cookies.set('session', JSON.stringify({ id: user.id, username: user.username }), {
+        httpOnly: true,
+        secure: true,
+        path: '/',
+    });
+
+    return response;
 }
