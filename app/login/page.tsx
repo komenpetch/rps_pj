@@ -37,13 +37,15 @@ export default function LoginPage() {
                 setSuccess('Account created successfully! You can now sign in.');
                 toggleMode();
             } else {
-                localStorage.setItem('session', JSON.stringify(result.session || { user: formData.username }));
+                localStorage.setItem('session', JSON.stringify(result.session));
                 window.location.href = '/';
             }
         } catch (err) {
+            console.error(err);
             setError('An unexpected error occurred. Please try again.');
         }
     };
+    
 
     const togglePasswordVisibility = () => {
         setShowPassword(!showPassword);

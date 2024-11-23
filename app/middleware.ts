@@ -10,6 +10,11 @@ export function middleware(req: NextRequest) {
         return NextResponse.redirect(new URL('/login', req.url));
     }
 
+    const sessionData = session ? JSON.parse(session.value) : null;
+    if (sessionData?.role !== 'admin') {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+    }
+
     return NextResponse.next();
 }
 
