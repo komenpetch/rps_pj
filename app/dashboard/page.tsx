@@ -4,9 +4,9 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 type User = {
-    id: string;
+    id?: string;
     username: string;
-    email: string | null;
+    email?: string;
     role: string;
 };
 
@@ -19,7 +19,7 @@ export default function Dashboard() {
     useEffect(() => {
         const session = localStorage.getItem('session');
         if (!session) {
-            router.push('/login');
+            router.push('/login'); // Redirect to login if not logged in
         } else {
             const parsedSession = JSON.parse(session);
             setUser(parsedSession);
@@ -45,10 +45,12 @@ export default function Dashboard() {
 
     const handleLogout = () => {
         localStorage.removeItem('session');
-        router.push('/login');
+        router.push('/login'); // Redirect to login
     };
 
     if (!user) return <div>Loading...</div>;
+
+    const isAdmin = user.role === 'admin';
 
     return (
         <div className="min-h-screen bg-gray-900 text-white flex flex-col items-center p-6">
@@ -63,15 +65,19 @@ export default function Dashboard() {
                         <thead>
                             <tr>
                                 <th className="border border-gray-700 py-2 px-4">Username</th>
-                                <th className="border border-gray-700 py-2 px-4">Email</th>
+                                {isAdmin && <th className="border border-gray-700 py-2 px-4">Email</th>}
                                 <th className="border border-gray-700 py-2 px-4">Role</th>
                             </tr>
                         </thead>
                         <tbody>
                             {users.map((user) => (
-                                <tr key={user.id}>
+                                <tr key={user.id || user.username}>
                                     <td className="border border-gray-700 py-2 px-4">{user.username}</td>
-                                    <td className="border border-gray-700 py-2 px-4">{user.email || 'N/A'}</td>
+                                    {isAdmin && (
+                                        <td className="border border-gray-700 py-2 px-4">
+                                            {user.email || 'N/A'}
+                                        </td>
+                                    )}
                                     <td className="border border-gray-700 py-2 px-4">{user.role}</td>
                                 </tr>
                             ))}

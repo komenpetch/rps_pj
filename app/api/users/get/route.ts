@@ -12,9 +12,21 @@ export async function GET(req: Request) {
     }
 
     try {
+        const { role } = JSON.parse(session);
+
+        // for admin
+        if (role === 'admin') {
+            const users = await prisma.user.findMany({
+                select: { id: true, username: true, email: true, role: true },
+            });
+            return NextResponse.json(users);
+        }
+        
+        // for user
         const users = await prisma.user.findMany({
-            select: { id: true, username: true, email: true, role: true },
+            select: { username: true, role: true },
         });
+
         return NextResponse.json(users);
     } catch (error) {
         console.error('Error fetching users:', error);
