@@ -1,10 +1,12 @@
 'use client';
+
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { z } from 'zod';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import { loginSchema, registerSchema } from '@/app/utils/valid';
+import AuthForm from './components/AuthForm';
 
 type FormData = {
     username: string;
@@ -19,23 +21,17 @@ type ValidationError = {
 export default function LoginPage() {
     const router = useRouter();
     const [isSignUpMode, setIsSignUpMode] = useState(false);
-    const [formData, setFormData] = useState<FormData>({ 
-        username: '', 
-        email: '', 
-        password: '' 
-    });
     const [errors, setErrors] = useState<ValidationError>({});
     const [apiError, setApiError] = useState('');
     const [success, setSuccess] = useState('');
     const [isLoading, setIsLoading] = useState(false);
-    const [showPassword, setShowPassword] = useState(false);
 
-    const validateForm = () => {
+    const validateForm = (data: FormData) => {
         try {
             if (isSignUpMode) {
-                registerSchema.parse(formData);
+                registerSchema.parse(data);
             } else {
-                loginSchema.parse(formData);
+                loginSchema.parse(data);
             }
             setErrors({});
             return true;
@@ -57,12 +53,11 @@ export default function LoginPage() {
         }
     };
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
+    const handleSubmit = async (formData: FormData) => {
         setApiError('');
         setSuccess('');
 
-        if (!validateForm()) return;
+        if (!validateForm(formData)) return;
 
         setIsLoading(true);
         try {
@@ -94,18 +89,10 @@ export default function LoginPage() {
         }
     };
 
-    const toggleMode = () => {
-        setIsSignUpMode(!isSignUpMode);
-        setFormData({ username: '', email: '', password: '' });
-        setErrors({});
-        setApiError('');
-        setSuccess('');
-    };
-
     return (
         <div className="min-h-screen flex items-center justify-center bg-[#333333] px-4">
-            <Card className="w-full max-w-md bg-[#222222] text-gray-200 shadow-2xl">
-                <CardHeader className="space-y-1">
+            <Card className="w-full max-w-sm bg-[#222222] text-gray-200 shadow-2xl">
+                <CardHeader>
                     <CardTitle className="text-2xl font-bold text-center text-zinc-400">
                         {isSignUpMode ? 'Create an Account' : 'Welcome Back'}
                     </CardTitle>
@@ -122,116 +109,36 @@ export default function LoginPage() {
                         </Alert>
                     )}
 
-                    <form onSubmit={handleSubmit} className="space-y-4">
-                        {/* Username Field */}
-                        <div className="space-y-2">
-                            <div className="relative">
-                                <i className="fas fa-user absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                                <input
-                                    type="text"
-                                    placeholder="Username"
-                                    value={formData.username}
-                                    onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                                    className={`w-full bg-transparent border-b ${
-                                        errors.username ? 'border-red-500' : 'border-gray-500'
-                                    } pl-10 py-2 focus:outline-none focus:border-white placeholder-gray-500`}
-                                />
-                            </div>
-                            {errors.username?.map((error, index) => (
-                                <p key={index} className="text-red-500 text-sm">{error}</p>
-                            ))}
-                        </div>
+                    <AuthForm
+                        isSignUpMode={isSignUpMode}
+                        onSubmit={handleSubmit}
+                        errors={errors}
+                        isLoading={isLoading}
+                    />
 
-                        {/* Email Field (SignUp only) */}
-                        {isSignUpMode && (
-                            <div className="space-y-2">
-                                <div className="relative">
-                                    <i className="fas fa-envelope absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                                    <input
-                                        type="email"
-                                        placeholder="Email"
-                                        value={formData.email}
-                                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                                        className={`w-full bg-transparent border-b ${
-                                            errors.email ? 'border-red-500' : 'border-gray-500'
-                                        } pl-10 py-2 focus:outline-none focus:border-white placeholder-gray-500`}
-                                    />
-                                </div>
-                                {errors.email?.map((error, index) => (
-                                    <p key={index} className="text-red-500 text-sm">{error}</p>
-                                ))}
-                            </div>
-                        )}
-
-                        {/* Password Field */}
-                        <div className="space-y-2">
-                            <div className="relative">
-                                <i className="fas fa-lock absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                                <input
-                                    type={showPassword ? 'text' : 'password'}
-                                    placeholder="Password"
-                                    value={formData.password}
-                                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                                    className={`w-full bg-transparent border-b ${
-                                        errors.password ? 'border-red-500' : 'border-gray-500'
-                                    } pl-10 py-2 focus:outline-none focus:border-white placeholder-gray-500`}
-                                />
+                    <p className="text-center text-gray-400 text-sm mt-6">
+                        {isSignUpMode ? (
+                            <>
+                                Already have an account?{' '}
                                 <button
-                                    type="button"
-                                    onClick={() => setShowPassword(!showPassword)}
-                                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
+                                    className="text-white hover:underline"
+                                    onClick={() => setIsSignUpMode(false)}
                                 >
-                                    <i className={`fas ${showPassword ? 'fa-eye-slash' : 'fa-eye'}`} />
+                                    Sign in
                                 </button>
-                            </div>
-                            {errors.password?.map((error, index) => (
-                                <p key={index} className="text-red-500 text-sm">{error}</p>
-                            ))}
-                        </div>
-
-                        {/* Submit Button */}
-                        <button
-                            type="submit"
-                            disabled={isLoading}
-                            className="w-full bg-[#444444] text-white py-2 rounded-md hover:bg-gray-700 transition-all font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            {isLoading ? (
-                                <span className="flex items-center justify-center">
-                                    <i className="fas fa-spinner fa-spin mr-2" />
-                                    {isSignUpMode ? 'Creating Account...' : 'Signing In...'}
-                                </span>
-                            ) : (
-                                isSignUpMode ? 'Sign Up' : 'Sign In'
-                            )}
-                        </button>
-
-                        {/* Mode Toggle */}
-                        <p className="text-center text-gray-400 text-sm mt-4">
-                            {isSignUpMode ? (
-                                <>
-                                    Already have an account?{' '}
-                                    <button
-                                        type="button"
-                                        onClick={toggleMode}
-                                        className="text-white hover:underline"
-                                    >
-                                        Sign in
-                                    </button>
-                                </>
-                            ) : (
-                                <>
-                                    Don't have an account?{' '}
-                                    <button
-                                        type="button"
-                                        onClick={toggleMode}
-                                        className="text-white hover:underline"
-                                    >
-                                        Sign up
-                                    </button>
-                                </>
-                            )}
-                        </p>
-                    </form>
+                            </>
+                        ) : (
+                            <>
+                                Don't have an account?{' '}
+                                <button
+                                    className="text-white hover:underline"
+                                    onClick={() => setIsSignUpMode(true)}
+                                >
+                                    Sign up
+                                </button>
+                            </>
+                        )}
+                    </p>
                 </CardContent>
             </Card>
         </div>
