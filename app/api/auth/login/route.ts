@@ -49,6 +49,14 @@ export async function POST(req: Request) {
             { status: 200 }
         );
 
+        response.cookies.set('session', JSON.stringify(session), {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'strict',
+            path: '/',
+            maxAge: 60 * 60 * 24
+        });
+
         return response;
 
     } catch (error) {
