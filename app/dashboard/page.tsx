@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 type User = {
-    id?: string;
+    id: string;
     username: string;
     email?: string;
     role: string;
@@ -43,6 +43,28 @@ export default function Dashboard() {
         }
     };
 
+    const handleDelete = async (id: string) => {
+        try {
+            const response = await fetch('/api/users/delete', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id }),
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Failed to delete user');
+            }
+
+            // Remove the deleted user from the state
+            setUsers((prev) => prev.filter((user) => user.id !== id));
+            alert('User deleted successfully');
+        } catch (err) {
+            console.error('Failed to delete user:', err);
+            setError('Failed to delete user.');
+        }
+    };
+
     const handleLogout = () => {
         localStorage.removeItem('session');
         router.push('/login'); // Redirect to login
@@ -67,18 +89,27 @@ export default function Dashboard() {
                                 <th className="border border-gray-700 py-2 px-4">Username</th>
                                 {isAdmin && <th className="border border-gray-700 py-2 px-4">Email</th>}
                                 <th className="border border-gray-700 py-2 px-4">Role</th>
+                                {isAdmin && <th className="border border-gray-700 py-2 px-4">Actions</th>}
                             </tr>
                         </thead>
                         <tbody>
-                            {users.map((user) => (
-                                <tr key={user.id || user.username}>
+                            {users.map((user, index) => (
+                                <tr key={user.id || index}>
                                     <td className="border border-gray-700 py-2 px-4">{user.username}</td>
                                     {isAdmin && (
-                                        <td className="border border-gray-700 py-2 px-4">
-                                            {user.email || 'N/A'}
-                                        </td>
+                                        <td className="border border-gray-700 py-2 px-4">{user.email || 'N/A'}</td>
                                     )}
                                     <td className="border border-gray-700 py-2 px-4">{user.role}</td>
+                                    {isAdmin && (
+                                        <td className="border border-gray-700 py-2 px-4">
+                                            <button
+                                                onClick={() => handleDelete(user.id)}
+                                                className="bg-red-500 hover:bg-red-700 text-white px-4 py-2 rounded-md"
+                                            >
+                                                Delete
+                                            </button>
+                                        </td>
+                                    )}
                                 </tr>
                             ))}
                         </tbody>
