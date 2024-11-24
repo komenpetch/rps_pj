@@ -1,6 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import RpsGame from './components/RPSgame';
 
 export default function RPSPage() {
     const router = useRouter();
@@ -35,6 +36,7 @@ export default function RPSPage() {
                     Logout
                 </button>
             </div>
+            <RpsGame />
         </div>
     );
 }
