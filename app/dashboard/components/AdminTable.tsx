@@ -1,83 +1,82 @@
-'use client';
-
-import { useState } from 'react';
-import EditUserForm from './EditUserForm';
-
-type User = {
-    id: string;
-    username: string;
-    email?: string;
-    role: string;
-    score: number;
-};
-
-type AdminTableProps = {
-    users: User[];
-    setUsers: React.Dispatch<React.SetStateAction<User[]>>;
-};
-
-export default function AdminTable({ users, setUsers }: AdminTableProps) {
-    const [editUser, setEditUser] = useState<User | null>(null);
-
-    const handleDelete = async (id: string) => {
-        try {
-            const response = await fetch('/api/users/delete', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id }),
-            });
-            if (!response.ok) throw new Error('Failed to delete user');
-            setUsers((prev) => prev.filter((user) => user.id !== id));
-        } catch (err) {
-            console.error(err);
-        }
-    };
-
-    return (
-        <>
-            {editUser ? (
-                <EditUserForm
-                    editUser={editUser}
-                    setEditUser={setEditUser}
-                    setUsers={setUsers}
-                />
-            ) : (
-                <table className="w-full text-left text-sm border-collapse border border-gray-700">
-                    <thead>
-                        <tr>
-                            <th className="border border-gray-700 py-2 px-4">Username</th>
-                            <th className="border border-gray-700 py-2 px-4">Score</th>
-                            <th className="border border-gray-700 py-2 px-4">Email</th>
-                            <th className="border border-gray-700 py-2 px-4">Role</th>
-                            <th className="border border-gray-700 py-2 px-4">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {users.map((user, index) => (
-                            <tr key={`${user.id}-${index}`}>
-                                <td className="border border-gray-700 py-2 px-4">{user.username}</td>
-                                <td className="border border-gray-700 py-2 px-4">{user.score}</td>
-                                <td className="border border-gray-700 py-2 px-4">{user.email || 'N/A'}</td>
-                                <td className="border border-gray-700 py-2 px-4">{user.role}</td>
-                                <td className="border border-gray-700 py-2 px-4">
-                                    <button
-                                        onClick={() => setEditUser(user)}
-                                        className="bg-yellow-500 hover:bg-yellow-700 text-white px-4 py-2 rounded-md"
-                                    >
-                                        Edit
-                                    </button>
-                                    <button
-                                        onClick={() => handleDelete(user.id)}
-                                        className="bg-red-500 hover:bg-red-700 text-white px-4 py-2 rounded-md ml-2"
-                                    >
-                                        Delete
-                                    </button>
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-            )}
-        </>
-    );
-}
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+  } from "@/components/ui/table"
+  import { Button } from "@/components/ui/button"
+  import { Edit, Trash2 } from "lucide-react"
+  
+  type User = {
+      id: string;
+      username: string;
+      email?: string;
+      role: string;
+      score: number;
+  };
+  
+  type AdminTableProps = {
+      users: User[];
+      onEdit: (user: User) => void;
+      onDelete: (id: string) => void;
+  };
+  
+  export default function AdminTable({ users, onEdit, onDelete }: AdminTableProps) {
+      return (
+          <div className="rounded-md border border-gray-700">
+              <Table>
+                  <TableHeader>
+                      <TableRow className="hover:bg-gray-800/50">
+                          <TableHead className="text-gray-400">Username</TableHead>
+                          <TableHead className="text-gray-400">Email</TableHead>
+                          <TableHead className="text-gray-400">Role</TableHead>
+                          <TableHead className="text-gray-400 text-right">Score</TableHead>
+                          <TableHead className="text-gray-400 text-right">Actions</TableHead>
+                      </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                      {users.map((user) => (
+                          <TableRow key={user.id} className="hover:bg-gray-800/50">
+                              <TableCell className="font-medium text-gray-300">
+                                  {user.username}
+                              </TableCell>
+                              <TableCell className="text-gray-300">
+                                  {user.email || 'N/A'}
+                              </TableCell>
+                              <TableCell className="text-gray-300">
+                                  <span className={`px-2 py-1 rounded-full text-xs ${
+                                      user.role === 'admin' ? 'bg-blue-500/20 text-blue-400' : 'bg-green-500/20 text-green-400'
+                                  }`}>
+                                      {user.role}
+                                  </span>
+                              </TableCell>
+                              <TableCell className="text-right text-gray-300">
+                                  {user.score}
+                              </TableCell>
+                              <TableCell className="text-right space-x-2">
+                                  <Button
+                                      onClick={() => onEdit(user)}
+                                      variant="ghost"
+                                      size="sm"
+                                      className="hover:bg-yellow-500/20 text-yellow-400"
+                                  >
+                                      <Edit className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                      onClick={() => onDelete(user.id)}
+                                      variant="ghost"
+                                      size="sm"
+                                      className="hover:bg-red-500/20 text-red-400"
+                                  >
+                                      <Trash2 className="h-4 w-4" />
+                                  </Button>
+                              </TableCell>
+                          </TableRow>
+                      ))}
+                  </TableBody>
+              </Table>
+          </div>
+      );
+  }
