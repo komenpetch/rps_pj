@@ -1,4 +1,7 @@
-'use client';
+import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { useState } from "react";
 
 type User = {
     id: string;
@@ -9,73 +12,71 @@ type User = {
 };
 
 type EditUserFormProps = {
-    editUser: User;
-    setEditUser: React.Dispatch<React.SetStateAction<User | null>>;
-    setUsers: React.Dispatch<React.SetStateAction<User[]>>;
+    user: User;
+    onSave: (updatedUser: User) => Promise<void>;
+    onCancel: () => void;
 };
 
-export default function EditUserForm({
-    editUser,
-    setEditUser,
-    setUsers,
-}: EditUserFormProps) {
-    const handleUpdate = async () => {
+export default function EditUserForm({ user, onSave, onCancel }: EditUserFormProps) {
+    const [editedUser, setEditedUser] = useState<User>({ ...user });
+    const [isLoading, setIsLoading] = useState(false);
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setIsLoading(true);
         try {
-            const response = await fetch('/api/users/update', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(editUser),
-            });
-            if (!response.ok) throw new Error('Failed to update user');
-            
-            // Update the users list optimistically
-            setUsers(prev => 
-                prev.map(user => 
-                    user.id === editUser.id ? editUser : user
-                )
-            );
-            
-            setEditUser(null);
-            
-            // Then fetch the latest data
-            const updatedUsers = await fetch('/api/users/get').then((res) => res.json());
-            setUsers(updatedUsers);
-        } catch (err) {
-            console.error(err);
+            await onSave(editedUser);
+        } finally {
+            setIsLoading(false);
         }
     };
 
     return (
-        <div className="bg-gray-800 p-4 rounded-md shadow-md">
-            <h3 className="text-xl font-bold mb-4">Edit User</h3>
-            <input
-                type="text"
-                value={editUser.username}
-                onChange={(e) =>
-                    setEditUser((prev) => prev && { ...prev, username: e.target.value })
-                }
-                className="w-full bg-gray-800 border border-gray-600 text-white p-2 rounded mb-2"
-            />
-            <input
-                type="number"
-                value={editUser.score}
-                onChange={(e) =>
-                    setEditUser((prev) => prev && { ...prev, score: parseInt(e.target.value, 10) })
-                }
-                className="w-full bg-gray-800 border border-gray-600 text-white p-2 rounded mb-2"
-            />
-            <button
-                onClick={handleUpdate}
-                className="bg-blue-500 hover:bg-blue-700 text-white px-4 py-2 rounded-md"
-            >
-                Save
-            </button>
-            <button
-                onClick={() => setEditUser(null)}
-                className="ml-2 bg-gray-500 hover:bg-gray-700 text-white px-4 py-2 rounded-md"
-            >
-                Cancel
-            </button>
-        </div>
+        <Card className="bg-gray-800 border-gray-700">
+            <CardHeader>
+                <CardTitle className="text-gray-200">Edit User</CardTitle>
+            </CardHeader>
+            <CardContent>
+                <form onSubmit={handleSubmit} className="space-y-4">
+                    <div className="space-y-2">
+                        <label className="text-sm text-gray-400">Username</label>
+                        <Input
+                            type="text"
+                            value={editedUser.username}
+                            onChange={(e) => setEditedUser({ ...editedUser, username: e.target.value })}
+                            className="bg-gray-700 border-gray-600 text-gray-200"
+                        />
+                    </div>
+
+                    <div className="space-y-2">
+                        <label className="text-sm text-gray-400">Score</label>
+                        <Input
+                            type="number"
+                            value={editedUser.score}
+                            onChange={(e) => setEditedUser({ ...editedUser, score: parseInt(e.target.value, 10) })}
+                            className="bg-gray-700 border-gray-600 text-gray-200"
+                        />
+                    </div>
+
+                    <div className="flex justify-end space-x-2">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={onCancel}
+                            className="border-gray-600 text-gray-200 hover:bg-gray-700"
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            type="submit"
+                            disabled={isLoading}
+                            className="bg-blue-600 hover:bg-blue-700"
+                        >
+                            {isLoading ? 'Saving...' : 'Save Changes'}
+                        </Button>
+                    </div>
+                </form>
+            </CardContent>
+        </Card>
     );
 }
