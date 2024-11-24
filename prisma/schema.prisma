@@ -21,5 +21,4 @@ model Score {
     userId   String
     user     User   @relation(fields: [userId], references: [id])
     points   Int
-    createdAt DateTime @default(now())
 }
