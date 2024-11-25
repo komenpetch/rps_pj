@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/table"
 
 type User = {
-    id: string;
+    id?: string;
     username: string;
     score: number;
 };
@@ -19,6 +19,7 @@ type UserTableProps = {
 };
 
 export default function UserTable({ users }: UserTableProps) {
+    // Sort users by score using useMemo to prevent re-renders
     const sortedUsers = useMemo(() => {
         return [...users].sort((a, b) => b.score - a.score);
     }, [users]);
@@ -27,7 +28,7 @@ export default function UserTable({ users }: UserTableProps) {
         <div className="rounded-md border border-gray-700">
             <Table>
                 <TableHeader>
-                    <TableRow className="hover:bg-gray-800/50">
+                    <TableRow>
                         <TableHead className="text-gray-400">Rank</TableHead>
                         <TableHead className="text-gray-400">Username</TableHead>
                         <TableHead className="text-gray-400 text-right">Score</TableHead>
@@ -36,7 +37,7 @@ export default function UserTable({ users }: UserTableProps) {
                 <TableBody>
                     {sortedUsers.map((user, index) => (
                         <TableRow 
-                            key={user.id} 
+                            key={user.id || `user-${index}`} 
                             className="hover:bg-gray-800/50"
                         >
                             <TableCell className="font-medium text-gray-300">
