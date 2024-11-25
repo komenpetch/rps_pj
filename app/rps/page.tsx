@@ -1,42 +1,35 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import RpsGame from './components/RPSgame';
+import Game from './components/Game';
 
 export default function RPSPage() {
     const router = useRouter();
+    const [isLoading, setIsLoading] = useState(true);
 
-    const ToDashboard = () => {
-        router.push('/dashboard');
-    };
+    useEffect(() => {
+        const session = localStorage.getItem('session');
+        if (!session) {
+            router.push('/login');
+            return;
+        }
+        setIsLoading(false);
+    }, [router]);
 
-    const handleLogout = () => {
-        localStorage.removeItem('session');
-        router.push('/login');
-    };
+    if (isLoading) {
+        return (
+            <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">
+                <p>Loading...</p>
+            </div>
+        );
+    }
 
     return (
-        <div className="min-h-screen bg-gray-900 text-white flex flex-col items-center justify-center">
-            <h1 className="text-4xl font-bold mb-6">Rock Paper Scissors Game</h1>
-            
-            <div className="flex gap-4">
-                {/* Dashboard Button */}
-                <button
-                    onClick={ToDashboard}
-                    className="bg-green-500 hover:bg-green-700 text-white px-4 py-2 rounded-md"
-                >
-                    Go to Dashboard
-                </button>
-
-                {/* Logout */}
-                <button
-                    onClick={handleLogout}
-                    className="bg-red-500 hover:bg-red-700 text-white px-4 py-2 rounded-md"
-                >
-                    Logout
-                </button>
+        <div className="min-h-screen bg-gray-900 text-white p-6">
+            <div className="max-w-2xl mx-auto">
+                <Game />
             </div>
-            <RpsGame />
         </div>
     );
 }
