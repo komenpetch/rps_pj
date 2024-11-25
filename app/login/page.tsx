@@ -56,9 +56,9 @@ export default function LoginPage() {
     const handleSubmit = async (formData: FormData) => {
         setApiError('');
         setSuccess('');
-
+    
         if (!validateForm(formData)) return;
-
+    
         setIsLoading(true);
         try {
             const endpoint = isSignUpMode ? '/api/auth/register' : '/api/auth/login';
@@ -67,20 +67,20 @@ export default function LoginPage() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(formData),
             });
-
+    
             const data = await response.json();
-
+    
             if (!response.ok) {
                 setApiError(data.error || 'An error occurred');
                 return;
             }
-
+    
             if (isSignUpMode) {
                 setSuccess('Account created successfully! You can now sign in.');
                 setTimeout(() => setIsSignUpMode(false), 2000);
             } else {
                 localStorage.setItem('session', JSON.stringify(data.session));
-                router.push('/dashboard');
+                router.push('/');
             }
         } catch (error) {
             setApiError('An unexpected error occurred. Please try again.');
@@ -104,7 +104,7 @@ export default function LoginPage() {
                         </Alert>
                     )}
                     {success && (
-                        <Alert className="mb-4 bg-green-900/20 border-green-900">
+                        <Alert className="mb-4 bg-green-900/20 border-green-900 text-white">
                             <AlertDescription>{success}</AlertDescription>
                         </Alert>
                     )}
