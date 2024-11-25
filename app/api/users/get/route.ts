@@ -1,3 +1,4 @@
+// app/api/users/get/route.ts
 import { NextResponse } from 'next/server';
 import { parse } from 'cookie';
 import { prisma } from '@/app/utils/prisma';
@@ -14,22 +15,55 @@ export async function GET(req: Request) {
     try {
         const { role } = JSON.parse(session);
 
-        // for admin
+        // For admin - return all user details
         if (role === 'admin') {
             const users = await prisma.user.findMany({
-                select: { id: true, username: true, email: true, role: true },
+                include: {
+                    scores: true,
+                },
             });
-            return NextResponse.json(users);
+
+            // Format the response to include the score
+            const formattedUsers = users.map(user => ({
+                id: user.id,
+                username: user.username,
+                email: user.email,
+                role: user.role,
+                score: user.scores.length > 0 ? user.scores[0].points : 0
+            }));
+
+            // Sort by score
+            formattedUsers.sort((a, b) => b.score - a.score);
+
+            return NextResponse.json(formattedUsers);
         }
         
-        // for user
+        // For regular users - return limited information
         const users = await prisma.user.findMany({
-            select: { username: true, role: true },
+            select: {
+                username: true,
+                scores: {
+                    select: {
+                        points: true
+                    }
+                }
+            }
         });
 
-        return NextResponse.json(users);
+        const formattedUsers = users.map(user => ({
+            username: user.username,
+            score: user.scores.length > 0 ? user.scores[0].points : 0
+        }));
+
+        // Sort by score
+        formattedUsers.sort((a, b) => b.score - a.score);
+
+        return NextResponse.json(formattedUsers);
     } catch (error) {
         console.error('Error fetching users:', error);
-        return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+        return NextResponse.json(
+            { error: 'Failed to fetch users' }, 
+            { status: 500 }
+        );
     }
 }
