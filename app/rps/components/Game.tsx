@@ -1,3 +1,4 @@
+'use client';
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -10,7 +11,7 @@ import {
     getComputerChoice,
     determineWinner,
     calculatePoints
-} from "@/app/utils/RpsGameLogic";
+} from '@/app/utils/RpsGameLogic';
 import ChoiceButton from './Choice'
 import ResultDisplay from './ResultDisplay'
 
@@ -21,6 +22,28 @@ type GameState = {
     points: number;
     isPlaying: boolean;
 };
+
+async function updateGameStats(result: GameResult, points: number) {
+    try {
+        const response = await fetch('/api/games/save', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                result,
+                points
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to save game result');
+        }
+    } catch (error) {
+        console.error('Error saving game result:', error);
+        throw error;
+    }
+}
 
 export default function Game() {
     const [gameState, setGameState] = useState<GameState>({
@@ -40,7 +63,8 @@ export default function Game() {
             const result = determineWinner(choice, computerChoice);
             const points = calculatePoints(result);
 
-            // Update game state
+            await updateGameStats(result, points);
+
             setGameState({
                 playerChoice: choice,
                 computerChoice,
@@ -49,21 +73,11 @@ export default function Game() {
                 isPlaying: false
             });
 
-            // Save game result to database
-            const response = await fetch('/api/games/save', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    playerChoice: choice,
-                    computerChoice,
-                    result,
-                    points
-                }),
+            toast({
+                title: result === 'win' ? 'Victory!' : result === 'lose' ? 'Defeat!' : 'Draw!',
+                description: `You earned ${points} points`,
+                duration: 3000,
             });
-
-            if (!response.ok) {
-                throw new Error('Failed to save game result');
-            }
 
         } catch (error) {
             console.error('Game error:', error);
@@ -72,6 +86,7 @@ export default function Game() {
                 title: "Error",
                 description: "Failed to save game result",
             });
+            setGameState(prev => ({ ...prev, isPlaying: false }));
         }
     };
 
@@ -106,6 +121,7 @@ export default function Game() {
                                 onClick={resetGame}
                                 variant="outline"
                                 className="border-gray-600 text-gray-200 hover:bg-gray-700"
+                                disabled={gameState.isPlaying}
                             >
                                 <Undo2 className="mr-2 h-4 w-4" />
                                 Play Again
