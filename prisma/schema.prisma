@@ -21,4 +21,6 @@ model Score {
     userId   String
     user     User   @relation(fields: [userId], references: [id])
     points   Int @default(0)
+    totalGames Int    @default(0)
+    wins       Int    @default(0)
 }
