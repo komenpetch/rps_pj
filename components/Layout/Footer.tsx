@@ -56,7 +56,7 @@ export default function Footer() {
                     </div>
                 </div>
                 <div className="mt-8 pt-6 border-t border-gray-700 text-center text-sm">
-                    <p>© 2024 Rock Paper Scissors. All rights reserved.</p>
+                    <p>© 2024 Rock Paper Scissors Games. Made by Komen Nitchaphon.</p>
                 </div>
             </div>
         </footer>

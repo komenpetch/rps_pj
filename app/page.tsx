@@ -17,7 +17,7 @@ export default function MainPage() {
 
     return (
         <div className="flex items-center justify-center min-h-[calc(100vh-14rem)]">
-            <div className="bg-[#222222] text-gray-200 rounded-lg p-8 w-full max-w-md shadow-2xl shadow-black">
+            <div className="bg-[#222222] text-gray-200 rounded-lg p-8 w-full max-w-md shadow-md shadow-black">
                 <h2 className="text-2xl font-bold text-center mb-6 text-zinc-400">
                     Welcome to Rock Paper Scissors
                 </h2>

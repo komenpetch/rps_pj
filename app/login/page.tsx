@@ -106,9 +106,9 @@ export default function LoginPage() {
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-[#333333] px-4">
-            <div className="bg-[#222222] text-gray-200 rounded-lg p-8 w-full max-w-sm shadow-2xl shadow-black">
+            <div className="bg-[#222222] text-gray-200 rounded-lg p-8 w-full max-w-sm shadow-md shadow-black">
                 <h2 className="text-2xl font-bold text-center mb-6 text-zinc-400">
-                    {isSignUpMode ? 'Create an Account' : 'Welcome Back'}
+                    {isSignUpMode ? 'Create an Account' : 'Login'}   
                 </h2>
 
                 {apiError && (
