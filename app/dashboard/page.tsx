@@ -1,14 +1,12 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState } from 'react';
+import { useAuth } from '@/app/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import AdminTable from './components/AdminTable';
 import UserTable from './components/UserTable';
-import EditUserForm from './components/EditUserForm';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { LogOut } from "lucide-react";
-import { useToast } from "@/components/ui/use-toast";
+import StatsCards from './components/StatsCards';
+import { toast } from "@/components/ui/use-toast";
 
 type User = {
     id: string;
@@ -18,174 +16,134 @@ type User = {
     score: number;
 };
 
+type Stats = {
+    totalGames: number;
+    winRate: number;
+    highestScore: number;
+    rank: number;
+};
+
 export default function Dashboard() {
+    const { user } = useAuth();
     const router = useRouter();
-    const { toast } = useToast();
-    const [user, setUser] = useState<{ username: string; role: string } | null>(null);
     const [users, setUsers] = useState<User[]>([]);
-    const [editingUser, setEditingUser] = useState<User | null>(null);
+    const [stats, setStats] = useState<Stats>({
+        totalGames: 0,
+        winRate: 0,
+        highestScore: 0,
+        rank: 0
+    });
     const [isLoading, setIsLoading] = useState(true);
 
-    const fetchUsers = useCallback(async () => {
+    // Check authentication first
+    useEffect(() => {
+        if (!user) {
+            router.push('/login');
+        }
+    }, [user, router]);
+
+    const fetchStats = async () => {
         try {
-            const response = await fetch('/api/users/get');
-            if (!response.ok) throw new Error('Failed to fetch users');
+            const response = await fetch('/api/users/stats');
+            if (!response.ok) {
+                throw new Error('Failed to fetch stats');
+            }
             const data = await response.json();
-            setUsers(data);
-        } catch (err) {
-            console.error(err);
+            setStats(data.stats);
+        } catch (error) {
+            console.error('Error fetching stats:', error);
             toast({
                 variant: "destructive",
                 title: "Error",
-                description: "Failed to fetch users",
+                description: "Failed to fetch stats",
             });
-        } finally {
-            setIsLoading(false);
         }
-    }, [toast]);
+    };
 
     useEffect(() => {
-        const session = localStorage.getItem('session');
-        if (!session) {
-            router.push('/login');
-            return;
-        }
+        let isMounted = true;
 
-        setUser(JSON.parse(session));
-        fetchUsers();
-    }, [router, fetchUsers]);
+        const fetchData = async () => {
+            try {
+                // Only fetch if user is logged in and component is mounted
+                if (!user || !isMounted) return;
 
-    const handleDelete = async (id: string) => {
-        try {
-            const response = await fetch('/api/users/delete', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id }),
-            });
+                setIsLoading(true);
 
-            if (!response.ok) {
-                const data = await response.json();
-                throw new Error(data.error || 'Failed to delete user');
+                // Fetch users
+                const usersResponse = await fetch('/api/users/get');
+                if (!usersResponse.ok) throw new Error('Failed to fetch users');
+                const usersData = await usersResponse.json();
+                if (isMounted) {
+                    setUsers(usersData);
+                }
+
+                // Fetch stats
+                await fetchStats();
+
+            } catch (err) {
+                if (isMounted) {
+                    console.error('Dashboard error:', err);
+                    toast({
+                        variant: "destructive",
+                        title: "Error",
+                        description: "Failed to fetch dashboard data",
+                    });
+                }
+            } finally {
+                if (isMounted) {
+                    setIsLoading(false);
+                }
             }
+        };
 
-            await fetchUsers(); // Refresh the users list
-            toast({
-                title: "Success",
-                description: "User deleted successfully",
-            });
-        } catch (err) {
-            console.error(err);
-            toast({
-                variant: "destructive",
-                title: "Error",
-                description: err instanceof Error ? err.message : "Failed to delete user",
-            });
-        }
-    };
+        fetchData();
 
-    const handleUpdate = async (updatedUser: User) => {
-        try {
-            const response = await fetch('/api/users/update', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(updatedUser),
-            });
-    
-            const data = await response.json();
-    
-            if (!response.ok) {
-                throw new Error(data.error || 'Failed to update user');
-            }
-    
-            // Update the users list
-            setUsers(prev => prev.map(user => 
-                user.id === updatedUser.id ? updatedUser : user
-            ));
-    
-            setEditingUser(null);
-            toast({
-                title: "Success",
-                description: "User updated successfully",
-            });
-        } catch (error) {
-            console.error('Update error:', error);
-            toast({
-                variant: "destructive",
-                title: "Error",
-                description: error instanceof Error ? error.message : 'Failed to update user',
-            });
-        }
-    };
+        // Cleanup function
+        return () => {
+            isMounted = false;
+        };
+    }, [user]);
 
-    const handleLogout = async () => {
-        try {
-            await fetch('/api/auth/logout', { method: 'POST' });
-            localStorage.removeItem('session');
-            router.push('/login');
-        } catch (err) {
-            console.error(err);
-            toast({
-                variant: "destructive",
-                title: "Error",
-                description: "Failed to logout",
-            });
-        }
-    };
+    // Show loading state
+    if (!user) {
+        return null;
+    }
 
     if (isLoading) {
         return (
-            <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">
-                <p>Loading...</p>
+            <div className="flex items-center justify-center min-h-[400px]">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-white"></div>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-gray-900 text-white p-6">
-            <div className="max-w-7xl mx-auto">
-                <div className="flex justify-between items-center mb-8">
-                    <div>
-                        <h1 className="text-3xl font-bold">Dashboard</h1>
-                        <p className="text-gray-400">Welcome back, {user?.username}</p>
-                    </div>
-                    <Button
-                        onClick={handleLogout}
-                        variant="destructive"
-                        className="flex items-center gap-2"
-                    >
-                        <LogOut className="h-4 w-4" />
-                        Logout
-                    </Button>
-                </div>
-
-                <Card className="bg-gray-800 border-gray-700">
-                    <CardHeader>
-                        <CardTitle className="text-gray-200">
-                            {user?.role === 'admin' ? 'User Management' : 'Leaderboard'}
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        {editingUser ? (
-                            <EditUserForm
-                                user={editingUser}
-                                onSave={handleUpdate}
-                                onCancel={() => setEditingUser(null)}
-                            />
-                        ) : (
-                            user?.role === 'admin' ? (
-                                <AdminTable
-                                    users={users}
-                                    onEdit={setEditingUser}
-                                    onDelete={handleDelete}
-                                    setUsers={setUsers}
-                                />
-                            ) : (
-                                <UserTable users={users} />
-                            )
-                        )}
-                    </CardContent>
-                </Card>
+        <div className="space-y-6">
+            {/* Welcome Section */}
+            <div className="bg-[#222222] rounded-lg p-6 border border-gray-700">
+                <h1 className="text-2xl font-bold text-white mb-2">
+                    Welcome back, {user.username}!
+                </h1>
+                <p className="text-gray-400">
+                    Track your progress and compete with other players.
+                </p>
             </div>
+
+            {/* Stats Cards */}
+            <StatsCards {...stats} />
+
+            {/* User/Admin Table */}
+            {user.role === 'admin' ? (
+                <AdminTable
+                    users={users}
+                    onEdit={() => {}}
+                    onDelete={() => {}}
+                    setUsers={setUsers}
+                />
+            ) : (
+                <UserTable users={users} />
+            )}
         </div>
     );
 }
