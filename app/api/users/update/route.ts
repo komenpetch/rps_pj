@@ -1,10 +1,9 @@
-// app/api/users/update/route.ts
 import { NextResponse } from 'next/server';
 import { parse } from 'cookie';
 import { prisma } from '@/app/utils/prisma';
 import { z } from 'zod';
 
-// Validation schema
+// Validation
 const updateUserSchema = z.object({
     id: z.string().min(1, "User ID is required"),
     username: z.string().min(3, "Username must be at least 3 characters"),

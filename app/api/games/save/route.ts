@@ -1,15 +1,6 @@
-// app/api/games/save/route.ts
 import { NextResponse } from 'next/server';
 import { parse } from 'cookie';
 import { prisma } from '@/app/utils/prisma';
-import { z } from 'zod';
-
-const gameResultSchema = z.object({
-    playerChoice: z.enum(['rock', 'paper', 'scissors']),
-    computerChoice: z.enum(['rock', 'paper', 'scissors']),
-    result: z.enum(['win', 'lose', 'draw']),
-    points: z.number().int().min(0)
-});
 
 export async function POST(req: Request) {
     try {
@@ -21,48 +12,57 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        const { id: userId } = JSON.parse(session);
-        const body = await req.json();
-        const validatedData = gameResultSchema.parse(body);
+        const { username } = JSON.parse(session);
+        const { result, points } = await req.json();
 
-        // Update user's score
-        await prisma.$transaction(async (tx) => {
-            // Get current score
-            const currentScore = await tx.score.findFirst({
-                where: { userId }
-            });
-
-            if (currentScore) {
-                // Update existing score
-                await tx.score.update({
-                    where: { id: currentScore.id },
-                    data: {
-                        points: currentScore.points + validatedData.points
-                    }
-                });
-            } else {
-                // Create new score
-                await tx.score.create({
-                    data: {
-                        userId,
-                        points: validatedData.points
-                    }
-                });
+        // Get user with their current score
+        const user = await prisma.user.findUnique({
+            where: { username },
+            include: {
+                scores: true
             }
         });
 
-        return NextResponse.json({ success: true });
-    } catch (error) {
-        console.error('Save game error:', error);
-        
-        if (error instanceof z.ZodError) {
-            return NextResponse.json({ 
-                error: error.errors[0].message 
-            }, { status: 400 });
+        if (!user) {
+            return NextResponse.json({ error: 'User not found' }, { status: 404 });
+        }
+
+        // Update or create score
+        if (user.scores.length > 0) {
+            await prisma.score.update({
+                where: { id: user.scores[0].id },
+                data: {
+                    points: {
+                        increment: points
+                    },
+                    totalGames: {
+                        increment: 1
+                    },
+                    wins: {
+                        increment: result === 'win' ? 1 : 0
+                    }
+                }
+            });
+        } else {
+            await prisma.score.create({
+                data: {
+                    userId: user.id,
+                    points: points,
+                    totalGames: 1,
+                    wins: result === 'win' ? 1 : 0
+                }
+            });
         }
 
         return NextResponse.json({ 
-            error: 'Failed to save game result' 
+            success: true,
+            message: 'Game saved successfully'
+        });
+
+    } catch (error) {
+        console.error('Error saving game:', error);
+        return NextResponse.json({ 
+            error: 'Failed to save game' 
         }, { status: 500 });
     }
 }
