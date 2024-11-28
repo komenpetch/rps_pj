@@ -1,47 +1,35 @@
-'use client';
 import { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { useToast } from "@/components/ui/use-toast"
-import { Undo2 } from "lucide-react"
+import { Gamepad2, RotateCcw } from "lucide-react";
+import { useToast } from "@/components/ui/use-toast";
 import { 
     type Choice, 
-    type GameResult,
     choices,
     getComputerChoice,
     determineWinner,
-    calculatePoints
+    calculatePoints 
 } from '@/app/utils/RpsGameLogic';
-import ChoiceButton from './Choice'
-import ResultDisplay from './ResultDisplay'
+import ChoiceButton from './Choice';
+import ResultDisplay from './ResultDisplay';
 
 type GameState = {
     playerChoice: Choice | null;
     computerChoice: Choice | null;
-    result: GameResult | null;
+    result: 'win' | 'lose' | 'draw' | null;
     points: number;
     isPlaying: boolean;
 };
 
-async function updateGameStats(result: GameResult, points: number) {
-    try {
-        const response = await fetch('/api/games/save', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                result,
-                points
-            })
-        });
+async function updateGameStats(result: 'win' | 'lose' | 'draw', points: number) {
+    const response = await fetch('/api/games/save', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ result, points })
+    });
 
-        if (!response.ok) {
-            throw new Error('Failed to save game result');
-        }
-    } catch (error) {
-        console.error('Error saving game result:', error);
-        throw error;
+    if (!response.ok) {
+        throw new Error('Failed to save game result');
     }
 }
 
@@ -63,8 +51,10 @@ export default function Game() {
             const result = determineWinner(choice, computerChoice);
             const points = calculatePoints(result);
 
+            // Save game result
             await updateGameStats(result, points);
 
+            // Update game state
             setGameState({
                 playerChoice: choice,
                 computerChoice,
@@ -73,8 +63,9 @@ export default function Game() {
                 isPlaying: false
             });
 
+            // Show toast notification
             toast({
-                title: result === 'win' ? 'Victory!' : result === 'lose' ? 'Defeat!' : 'Draw!',
+                title: result === 'win' ? '🎉 Victory!' : result === 'lose' ? '😔 Defeat!' : '🤝 Draw!',
                 description: `You earned ${points} points`,
                 duration: 3000,
             });
@@ -101,36 +92,39 @@ export default function Game() {
     };
 
     return (
-        <Card className="bg-gray-800 border-gray-700">
-            <CardHeader>
-                <CardTitle className="text-2xl font-bold text-center text-gray-200">
+        <div className="bg-[#222222] rounded-lg shadow-xl border border-gray-700 p-8">
+            <div className="text-center mb-8">
+                <h1 className="text-2xl font-bold text-zinc-400 flex items-center justify-center gap-2">
+                    <Gamepad2 className="w-6 h-6" />
                     Rock Paper Scissors
-                </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-8">
+                </h1>
+            </div>
+
+            <div className="space-y-8">
                 {gameState.result ? (
-                    <>
+                    <div className="space-y-6">
                         <ResultDisplay 
                             playerChoice={gameState.playerChoice!}
                             computerChoice={gameState.computerChoice!}
                             result={gameState.result}
                             points={gameState.points}
                         />
+
                         <div className="text-center">
-                            <Button
+                            <button
                                 onClick={resetGame}
-                                variant="outline"
-                                className="border-gray-600 text-gray-200 hover:bg-gray-700"
                                 disabled={gameState.isPlaying}
+                                className="bg-[#444444] text-white px-6 py-3 rounded-md hover:bg-gray-700 
+                                         transition-colors flex items-center gap-2 mx-auto"
                             >
-                                <Undo2 className="mr-2 h-4 w-4" />
+                                <RotateCcw className="w-4 h-4" />
                                 Play Again
-                            </Button>
+                            </button>
                         </div>
-                    </>
+                    </div>
                 ) : (
-                    <>
-                        <p className="text-center text-gray-400">
+                    <div className="space-y-8">
+                        <p className="text-center text-gray-400 text-lg">
                             Make your choice:
                         </p>
                         <div className="flex justify-center gap-6">
@@ -143,9 +137,9 @@ export default function Game() {
                                 />
                             ))}
                         </div>
-                    </>
+                    </div>
                 )}
-            </CardContent>
-        </Card>
+            </div>
+        </div>
     );
 }
