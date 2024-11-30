@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { parse } from 'cookie';
-import { prisma } from '@/app/utils/prisma';
+import { prisma } from '@/app/utils/db';
 import { Prisma } from '@prisma/client';
 
 export async function POST(req: Request) {

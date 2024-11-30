@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import bcrypt from 'bcrypt';
-import { prisma } from '@/app/utils/prisma';
+import { prisma } from '@/app/utils/db';
 import { registerSchema } from '@/app/utils/valid';
 import { z } from 'zod';
 

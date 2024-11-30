@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/app/utils/prisma';
+import { prisma } from '@/app/utils/db';
 import bcrypt from 'bcrypt';
 import { loginSchema } from '@/app/utils/valid';
 import { z } from 'zod';
