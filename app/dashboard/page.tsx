@@ -2,10 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/app/contexts/AuthContext';
-import { useRouter } from 'next/navigation';
-import AdminTable from './components/AdminTable';
-import UserTable from './components/UserTable';
-import StatsCards from './components/StatsCards';
+import AdminTable from '@/app/dashboard/components/AdminTable';
+import UserTable from '@/app/dashboard/components/UserTable';
+import EditUserForm from '@/app/dashboard/components/EditUserForm';
+import StatsCards from '@/app/dashboard/components/StatsCards';
 import { toast } from "@/components/ui/use-toast";
 
 type User = {
@@ -25,90 +25,111 @@ type Stats = {
 
 export default function Dashboard() {
     const { user } = useAuth();
-    const router = useRouter();
     const [users, setUsers] = useState<User[]>([]);
+    const [editingUser, setEditingUser] = useState<User | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
     const [stats, setStats] = useState<Stats>({
         totalGames: 0,
         winRate: 0,
         highestScore: 0,
         rank: 0
     });
-    const [isLoading, setIsLoading] = useState(true);
-
-    // Check authentication first
-    useEffect(() => {
-        if (!user) {
-            router.push('/login');
-        }
-    }, [user, router]);
-
-    const fetchStats = async () => {
-        try {
-            const response = await fetch('/api/users/stats');
-            if (!response.ok) {
-                throw new Error('Failed to fetch stats');
-            }
-            const data = await response.json();
-            setStats(data.stats);
-        } catch (error) {
-            console.error('Error fetching stats:', error);
-            toast({
-                variant: "destructive",
-                title: "Error",
-                description: "Failed to fetch stats",
-            });
-        }
-    };
 
     useEffect(() => {
-        let isMounted = true;
-
         const fetchData = async () => {
             try {
-                // Only fetch if user is logged in and component is mounted
-                if (!user || !isMounted) return;
-
-                setIsLoading(true);
-
                 // Fetch users
                 const usersResponse = await fetch('/api/users/get');
                 if (!usersResponse.ok) throw new Error('Failed to fetch users');
                 const usersData = await usersResponse.json();
-                if (isMounted) {
-                    setUsers(usersData);
-                }
+                setUsers(usersData);
 
                 // Fetch stats
-                await fetchStats();
+                const statsResponse = await fetch('/api/users/stats');
+                if (!statsResponse.ok) throw new Error('Failed to fetch stats');
+                const { stats: statsData } = await statsResponse.json();
+                setStats(statsData);
 
             } catch (err) {
-                if (isMounted) {
-                    console.error('Dashboard error:', err);
-                    toast({
-                        variant: "destructive",
-                        title: "Error",
-                        description: "Failed to fetch dashboard data",
-                    });
-                }
+                console.error(err);
+                toast({
+                    variant: "destructive",
+                    title: "Error",
+                    description: "Failed to fetch dashboard data",
+                });
             } finally {
-                if (isMounted) {
-                    setIsLoading(false);
-                }
+                setIsLoading(false);
             }
         };
 
         fetchData();
+    }, []);
 
-        // Cleanup function
-        return () => {
-            isMounted = false;
-        };
-    }, [user]);
+    const handleEdit = (user: User) => {
+        setEditingUser(user);
+    };
 
-    // Show loading state
-    if (!user) {
-        return null;
-    }
+    const handleUpdate = async (updatedUser: User) => {
+        try {
+            const response = await fetch('/api/users/update', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(updatedUser),
+            });
+
+            if (!response.ok) {
+                const data = await response.json();
+                throw new Error(data.error || 'Failed to update user');
+            }
+
+            // Update users list with new data
+            setUsers(prev => prev.map(user => 
+                user.id === updatedUser.id ? updatedUser : user
+            ));
+
+            // Close edit form
+            setEditingUser(null);
+
+            toast({
+                title: "Success",
+                description: "User updated successfully",
+            });
+        } catch (error) {
+            console.error('Update error:', error);
+            toast({
+                variant: "destructive",
+                title: "Error",
+                description: error instanceof Error ? error.message : 'Failed to update user',
+            });
+        }
+    };
+
+    const handleDelete = async (id: string) => {
+        try {
+            const response = await fetch('/api/users/delete', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id }),
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to delete user');
+            }
+
+            setUsers(prevUsers => prevUsers.filter(user => user.id !== id));
+            toast({
+                title: "Success",
+                description: "User deleted successfully",
+            });
+        } catch (error) {
+            console.error('Delete error:', error);
+            toast({
+                variant: "destructive",
+                title: "Error",
+                description: "Failed to delete user",
+            });
+        }
+    };
 
     if (isLoading) {
         return (
@@ -123,7 +144,7 @@ export default function Dashboard() {
             {/* Welcome Section */}
             <div className="bg-[#222222] rounded-lg p-6 border border-gray-700">
                 <h1 className="text-2xl font-bold text-white mb-2">
-                    Welcome back, {user.username}!
+                    Welcome back, {user?.username}!
                 </h1>
                 <p className="text-gray-400">
                     Track your progress and compete with other players.
@@ -134,15 +155,23 @@ export default function Dashboard() {
             <StatsCards {...stats} />
 
             {/* User/Admin Table */}
-            {user.role === 'admin' ? (
-                <AdminTable
-                    users={users}
-                    onEdit={() => {}}
-                    onDelete={() => {}}
-                    setUsers={setUsers}
+            {editingUser ? (
+                <EditUserForm
+                    user={editingUser}
+                    onSave={handleUpdate}
+                    onCancel={() => setEditingUser(null)}
                 />
             ) : (
-                <UserTable users={users} />
+                user?.role === 'admin' ? (
+                    <AdminTable
+                        users={users}
+                        onEdit={handleEdit}
+                        onDelete={handleDelete}
+                        setUsers={setUsers}
+                    />
+                ) : (
+                    <UserTable users={users} />
+                )
             )}
         </div>
     );
