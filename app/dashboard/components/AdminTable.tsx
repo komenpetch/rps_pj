@@ -1,25 +1,14 @@
 import { useState } from 'react';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
-import { Button } from "@/components/ui/button"
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
-import { Edit, Trash2 } from "lucide-react"
-import { useToast } from "@/components/ui/use-toast"
+import { 
+    Edit, 
+    Trash2, 
+    Search,
+    ChevronUp,
+    ChevronDown,
+    Crown,
+    User as UserIcon
+} from "lucide-react";
+import { useToast } from "@/components/ui/use-toast";
 
 type User = {
     id: string;
@@ -36,23 +25,61 @@ type AdminTableProps = {
     setUsers: React.Dispatch<React.SetStateAction<User[]>>;
 };
 
-export default function AdminTable({ users, onEdit, setUsers }: AdminTableProps) {
+type SortField = 'username' | 'email' | 'role' | 'score';
+type SortDirection = 'asc' | 'desc';
+
+export default function AdminTable({ users, onEdit, onDelete, setUsers }: AdminTableProps) {
+    const [searchTerm, setSearchTerm] = useState('');
+    const [sortField, setSortField] = useState<SortField>('score');
+    const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
     const [userToDelete, setUserToDelete] = useState<string | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
     const { toast } = useToast();
 
+    // Sorting function
+    const sortUsers = (a: User, b: User, field: SortField): number => {
+        const direction = sortDirection === 'asc' ? 1 : -1;
+        
+        switch (field) {
+            case 'score':
+                return (a.score - b.score) * direction;
+            case 'username':
+            case 'email':
+            case 'role':
+                const aValue = a[field] || '';
+                const bValue = b[field] || '';
+                return aValue.localeCompare(bValue) * direction;
+            default:
+                return 0;
+        }
+    };
+
+    // Filter and sort users
+    const filteredUsers = users
+        .filter(user => {
+            const searchLower = searchTerm.toLowerCase();
+            return (
+                user.username.toLowerCase().includes(searchLower) ||
+                (user.email?.toLowerCase().includes(searchLower) || '') ||
+                user.role.toLowerCase().includes(searchLower)
+            );
+        })
+        .sort((a, b) => sortUsers(a, b, sortField));
+
+    const handleSort = (field: SortField) => {
+        if (sortField === field) {
+            setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+        } else {
+            setSortField(field);
+            setSortDirection('asc');
+        }
+    };
+
     const handleDelete = async () => {
         if (!userToDelete) return;
-
+        
         setIsDeleting(true);
         try {
-            const userToBeDeleted = users.find(user => user.id === userToDelete);
-            if (!userToBeDeleted) {
-                throw new Error('User not found');
-            }
-
-            setUsers(prevUsers => prevUsers.filter(user => user.id !== userToDelete));
-
             const response = await fetch('/api/users/delete', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -62,23 +89,20 @@ export default function AdminTable({ users, onEdit, setUsers }: AdminTableProps)
             const data = await response.json();
 
             if (!response.ok) {
-                setUsers(prevUsers => [...prevUsers, userToBeDeleted]);
                 throw new Error(data.error || 'Failed to delete user');
             }
 
+            setUsers(prev => prev.filter(user => user.id !== userToDelete));
             toast({
                 title: "Success",
                 description: "User deleted successfully",
-                duration: 3000,
             });
-
         } catch (error) {
             console.error('Delete error:', error);
             toast({
                 variant: "destructive",
                 title: "Error",
                 description: error instanceof Error ? error.message : 'Failed to delete user',
-                duration: 5000,
             });
         } finally {
             setIsDeleting(false);
@@ -86,109 +110,165 @@ export default function AdminTable({ users, onEdit, setUsers }: AdminTableProps)
         }
     };
 
-    // Sort users by score
-    const sortedUsers = [...users].sort((a, b) => b.score - a.score);
+    const SortIcon = ({ field }: { field: SortField }) => {
+        if (sortField !== field) return null;
+        return sortDirection === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />;
+    };
 
     return (
-        <>
-            <div className="rounded-md border border-gray-700">
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead className="text-gray-400">Rank</TableHead>
-                            <TableHead className="text-gray-400">Username</TableHead>
-                            <TableHead className="text-gray-400">Email</TableHead>
-                            <TableHead className="text-gray-400">Role</TableHead>
-                            <TableHead className="text-gray-400 text-right">Score</TableHead>
-                            <TableHead className="text-gray-400 text-right">Actions</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {sortedUsers.map((user, index) => (
-                            <TableRow key={user.id} className="hover:bg-gray-800/50">
-                                <TableCell className="font-medium text-gray-300">
-                                    #{index + 1}
-                                </TableCell>
-                                <TableCell className="text-gray-300">
-                                    {user.username}
-                                </TableCell>
-                                <TableCell className="text-gray-300">
-                                    {user.email || 'N/A'}
-                                </TableCell>
-                                <TableCell>
-                                    <span className={`px-2 py-1 rounded-full text-xs ${
-                                        user.role === 'admin' 
-                                            ? 'bg-blue-500/20 text-blue-400' 
-                                            : 'bg-green-500/20 text-green-400'
-                                    }`}>
-                                        {user.role}
-                                    </span>
-                                </TableCell>
-                                <TableCell className="text-right text-gray-300">
-                                    {user.score}
-                                </TableCell>
-                                <TableCell className="text-right space-x-2">
-                                    <Button
-                                        onClick={() => onEdit(user)}
-                                        variant="ghost"
-                                        size="sm"
-                                        className="hover:bg-yellow-500/20 text-yellow-400"
-                                    >
-                                        <Edit className="h-4 w-4" />
-                                    </Button>
-                                    <Button
-                                        onClick={() => setUserToDelete(user.id)}
-                                        variant="ghost"
-                                        size="sm"
-                                        className="hover:bg-red-500/20 text-red-400"
-                                        disabled={isDeleting}
-                                    >
-                                        <Trash2 className="h-4 w-4" />
-                                    </Button>
-                                </TableCell>
-                            </TableRow>
-                        ))}
-                        {sortedUsers.length === 0 && (
-                            <TableRow>
-                                <TableCell 
-                                    colSpan={6} 
-                                    className="text-center text-gray-400 h-24"
-                                >
-                                    No users found
-                                </TableCell>
-                            </TableRow>
-                        )}
-                    </TableBody>
-                </Table>
+        <div className="bg-[#222222] rounded-lg shadow-xl border border-gray-700">
+            {/* Table Header */}
+            <div className="p-4 border-b border-gray-700">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <h2 className="text-xl font-semibold text-white">
+                        User Management
+                    </h2>
+                    <div className="relative w-full sm:w-64">
+                        <input
+                            type="text"
+                            placeholder="Search users..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="w-full bg-gray-800 border border-gray-700 rounded-lg pl-10 pr-4 py-2 text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                    </div>
+                </div>
             </div>
 
-            <AlertDialog open={!!userToDelete} onOpenChange={() => !isDeleting && setUserToDelete(null)}>
-                <AlertDialogContent className="bg-gray-800 border-gray-700">
-                    <AlertDialogHeader>
-                        <AlertDialogTitle className="text-gray-200">
+            {/* Table Content */}
+            <div className="overflow-x-auto">
+                <table className="w-full">
+                    <thead>
+                        <tr className="bg-gray-800/50">
+                            <th className="px-4 py-3 text-left text-gray-400 font-medium">
+                                <button
+                                    onClick={() => handleSort('username')}
+                                    className="flex items-center gap-1 hover:text-white"
+                                >
+                                    Username
+                                    <SortIcon field="username" />
+                                </button>
+                            </th>
+                            <th className="px-4 py-3 text-left text-gray-400 font-medium">
+                                <button
+                                    onClick={() => handleSort('email')}
+                                    className="flex items-center gap-1 hover:text-white"
+                                >
+                                    Email
+                                    <SortIcon field="email" />
+                                </button>
+                            </th>
+                            <th className="px-4 py-3 text-left text-gray-400 font-medium">
+                                <button
+                                    onClick={() => handleSort('role')}
+                                    className="flex items-center gap-1 hover:text-white"
+                                >
+                                    Role
+                                    <SortIcon field="role" />
+                                </button>
+                            </th>
+                            <th className="px-4 py-3 text-right text-gray-400 font-medium">
+                                <button
+                                    onClick={() => handleSort('score')}
+                                    className="flex items-center gap-1 hover:text-white ml-auto"
+                                >
+                                    Score
+                                    <SortIcon field="score" />
+                                </button>
+                            </th>
+                            <th className="px-4 py-3 text-right text-gray-400 font-medium">
+                                Actions
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {filteredUsers.map((user) => (
+                            <tr 
+                                key={user.id}
+                                className="border-t border-gray-700 hover:bg-gray-800/50 transition-colors"
+                            >
+                                <td className="px-4 py-3 text-white">
+                                    {user.username}
+                                </td>
+                                <td className="px-4 py-3 text-gray-300">
+                                    {user.email || 'N/A'}
+                                </td>
+                                <td className="px-4 py-3">
+                                    <div className="flex items-center gap-2">
+                                        {user.role === 'admin' ? (
+                                            <Crown className="w-4 h-4 text-yellow-400" />
+                                        ) : (
+                                            <UserIcon className="w-4 h-4 text-blue-400" />
+                                        )}
+                                        <span className={`text-sm ${
+                                            user.role === 'admin' ? 'text-yellow-400' : 'text-blue-400'
+                                        }`}>
+                                            {user.role}
+                                        </span>
+                                    </div>
+                                </td>
+                                <td className="px-4 py-3 text-right font-mono text-gray-300">
+                                    {user.score.toLocaleString()}
+                                </td>
+                                <td className="px-4 py-3 text-right space-x-2">
+                                    <button
+                                        onClick={() => onEdit(user)}
+                                        className="text-gray-400 hover:text-yellow-400 transition-colors"
+                                        title="Edit user"
+                                    >
+                                        <Edit className="w-4 h-4" />
+                                    </button>
+                                    <button
+                                        onClick={() => setUserToDelete(user.id)}
+                                        className="text-gray-400 hover:text-red-400 transition-colors"
+                                        title="Delete user"
+                                    >
+                                        <Trash2 className="w-4 h-4" />
+                                    </button>
+                                </td>
+                            </tr>
+                        ))}
+                        {filteredUsers.length === 0 && (
+                            <tr>
+                                <td colSpan={5} className="px-4 py-8 text-center text-gray-400">
+                                    {searchTerm ? 'No users found matching your search.' : 'No users found.'}
+                                </td>
+                            </tr>
+                        )}
+                    </tbody>
+                </table>
+            </div>
+
+            {/* Delete Confirmation Modal */}
+            {userToDelete && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+                    <div className="bg-[#222222] rounded-lg p-6 max-w-md w-full">
+                        <h3 className="text-xl font-semibold text-white mb-4">
                             Confirm Deletion
-                        </AlertDialogTitle>
-                        <AlertDialogDescription className="text-gray-400">
+                        </h3>
+                        <p className="text-gray-400 mb-6">
                             Are you sure you want to delete this user? This action cannot be undone.
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel 
-                            disabled={isDeleting}
-                            className="bg-gray-700 text-gray-200 border-gray-600 hover:bg-gray-600"
-                        >
-                            Cancel
-                        </AlertDialogCancel>
-                        <AlertDialogAction
-                            onClick={handleDelete}
-                            disabled={isDeleting}
-                            className="bg-red-600 text-white hover:bg-red-700"
-                        >
-                            {isDeleting ? 'Deleting...' : 'Delete'}
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
-        </>
+                        </p>
+                        <div className="flex justify-end space-x-4">
+                            <button
+                                onClick={() => setUserToDelete(null)}
+                                disabled={isDeleting}
+                                className="px-4 py-2 text-gray-400 hover:text-white transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleDelete}
+                                disabled={isDeleting}
+                                className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition-colors disabled:opacity-50"
+                            >
+                                {isDeleting ? 'Deleting...' : 'Delete'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
     );
 }
