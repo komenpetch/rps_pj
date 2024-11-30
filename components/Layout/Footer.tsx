@@ -21,7 +21,9 @@ export default function Footer() {
                     <div>
                         <h3 className="text-white font-semibold mb-3">About</h3>
                         <p className="text-sm">
-                            Rock Paper Scissors is a classic game reimagined for the digital age.
+                            Rock Paper Scissors is a classic game. for an over a decade,
+                            people have been playing it. Now,
+                            you can play it online with your friends.
                             Compete with others and climb the leaderboard!
                         </p>
                     </div>
@@ -44,7 +46,7 @@ export default function Footer() {
                         <h3 className="text-white font-semibold mb-3">Connect</h3>
                         <div className="flex space-x-4">
                             <a href="#" className="text-gray-400 hover:text-white transition-colors scale-on-hover">
-                                <i className="fab fa-twitter"></i>
+                                <i className="fab fa-steam"></i>
                             </a>
                             <a href="#" className="text-gray-400 hover:text-white transition-colors scale-on-hover">
                                 <i className="fab fa-discord"></i>
@@ -56,7 +58,7 @@ export default function Footer() {
                     </div>
                 </div>
                 <div className="mt-8 pt-6 border-t border-gray-700 text-center text-sm">
-                    <p>© 2024 Rock Paper Scissors Games. Made by Komen Nitchaphon.</p>
+                    <p>© 2024 Rock Paper Scissors Games. Built by Komen Nitchaphon.</p>
                 </div>
             </div>
         </footer>

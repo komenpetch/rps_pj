@@ -82,7 +82,7 @@ export default function LoginPage() {
             }
 
             if (isSignUpMode) {
-                setSuccess('Account created successfully! You can now sign in.');
+                setSuccess('Account created successfully!');
                 setTimeout(() => setIsSignUpMode(false), 2000);
             } else {
                 localStorage.setItem('session', JSON.stringify(data.session));

@@ -33,7 +33,7 @@ export default function Header({
                         )}
                     </button>
                     <h1 className="text-xl font-bold text-zinc-400">
-                        Rock Paper Scissors
+                        Rock Paper Scissors Games
                     </h1>
                 </div>
 

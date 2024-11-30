@@ -28,7 +28,7 @@ export default function RPSPage() {
 
     return (
         <div className="flex-grow min-h-[calc(100vh-14rem)] flex items-center justify-center p-4">
-            <div className="w-full max-w-4xl">
+            <div className="w-full max-w-xl">
                 <Game />
             </div>
         </div>
